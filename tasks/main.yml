@@ -1,0 +1,184 @@
+---
+- name: ensure authmaster packages are installed
+  yum: name={{ item }} state=present
+  with_items:
+    - php
+    - php-ldap
+    - php-mcrypt
+    - php-mbstring
+  tags: ['authmaster']
+
+# config PLA
+
+- name: check if pla is already installed
+  stat: path=/var/www/phpldapadmin-1.2.3
+  register: pla_found
+  tags: ['authmaster']
+
+- name: copy PLA source
+  get_url: url=http://superb-dca2.dl.sourceforge.net/project/phpldapadmin/phpldapadmin-php5/1.2.3/phpldapadmin-1.2.3.tgz dest=/usr/src/phpldapadmin-1.2.3.tgz
+  when: pla_found.stat.exists == false
+  tags: ['authmaster']
+
+- name: untar pla
+  shell: "tar zx -C /var/www -f /usr/src/phpldapadmin-1.2.3.tgz"
+  when: pla_found.stat.exists == false
+  tags: ['authmaster']
+
+- name: set PLA perms
+  file:
+    path: /var/www/phpldapadmin-1.2.3
+    state: directory
+    owner: root
+    group: apache
+    mode: 0750
+  tags: ['authmaster']
+
+- name: create ldap-admin symlink
+  file: src=/var/www/phpldapadmin-1.2.3 dest=/var/www/ldap-admin owner=root group=root state=link
+  tags: ['authmaster']
+
+- name: ensure ldap admin config is in place
+  template  :
+    src: "etc.httpd.conf.d.ldap-admin.conf.j2"
+    dest: "/etc/httpd/conf.d/ldap-admin.conf"
+    owner: root
+    group: root
+    mode: 0640
+  register: reload httpd
+  tags: ['authmaster']
+
+- name: ensure PLA config is in place
+  template  :
+    src: "var.www.ldap-admin.config.config.php.j2"
+    dest: "/var/www/ldap-admin/config/config.php"
+    owner: root
+    group: apache
+    mode: 0640
+  tags: ['authmaster']
+
+- name: ensure PLA templates are in place
+  template  :
+    src: "var.www.ldap-admin.templates.creation.privUserWithKey.xml.j2"
+    dest: "/var/www/ldap-admin/templates/creation/privUserWithKey.xml"
+    owner: root
+    group: apache
+    mode: 0640
+  tags: ['authmaster']
+
+- name: ensure unwanted PLA templates are removed
+  file: path=/var/www/ldap-admin/templates/creation/{{ item }} state=absent
+  with_items:
+    - alias.xml
+    - courierMailAccount.xml
+    - courierMailAlias.xml
+    - dNSDomain.xml
+    - example.xml
+    - kolabPerson.xml
+    - mozillaOrgPerson.xml
+    - sambaDomain.xml
+    - sambaGroupMapping.xml
+    - sambaMachine.xml
+    - sambaSamAccount.xml
+    - sendmailMTAAliasObject.xml
+    - sendmailMTAClass.xml
+    - sendmailMTACluster.xml
+    - sendmailMTAMapObject.xml
+    - sendmailVirtualDomain.xml
+    - sendmailVirtualUser.xml
+    - simpleSecurityObject.xml
+  tags: ['authmaster']
+
+# config password reset
+- name: ensure wildcart cert is in place
+  copy: content="{{ public_wildcard_cert }}" dest="/etc/pki/tls/certs/public_wildcard.crt" mode=0640 owner=root group=root
+  tags: ['authmaster']
+
+- name: ensure wildcart key is in place
+  copy: content="{{ public_wildcard_key }}" dest="/etc/pki/tls/private/public_wildcard.key" mode=0640 owner=root group=root
+  tags: ['authmaster']
+
+- name: check if password reset is already installed
+  stat: path=/var/www/ltb-project-self-service-password-0.8
+  register: ssp_found
+  tags: ['authmaster']
+
+- name: copy SSP source
+  get_url: url=http://tools.ltb-project.org/attachments/download/497/ltb-project-self-service-password-0.8.tar.gz dest=/usr/src/ltb-project-self-service-password-0.8.tar.gz
+  when: ssp_found.stat.exists == false
+  tags: ['authmaster']
+
+- name: untar ssp
+  shell: "tar zx -C /var/www -f /usr/src/ltb-project-self-service-password-0.8.tar.gz"
+  when: ssp_found.stat.exists == false
+  tags: ['authmaster']
+
+- name: set SSP perms
+  file:
+    path: /var/www/ltb-project-self-service-password-0.8
+    state: directory
+    owner: root
+    group: apache
+    mode: 0750
+  tags: ['authmaster']
+
+- name: create ldap-reset symlink
+  file: src=/var/www/ltb-project-self-service-password-0.8 dest=/var/www/ldap-reset owner=root group=root state=link
+  tags: ['authmaster']
+
+- name: ensure ldap reset apache config is in place
+  template  :
+    src: "etc.httpd.conf.d.ldap-reset.conf.j2"
+    dest: "/etc/httpd/conf.d/ldap-reset.conf"
+    owner: root
+    group: root
+    mode: 0640
+  register: reload httpd
+  tags: ['authmaster']
+
+- name: copy logo source
+  get_url: url={{ logo_url }} dest=/var/www/ldap-reset/logo.png
+  tags: ['authmaster']
+
+- name: ensure LDAP reset PHP config is in place
+  template  :
+    src: "var.www.ldap-reset.conf.config.inc.php.j2"
+    dest: "/var/www/ldap-reset/conf/config.inc.php"
+    owner: root
+    group: apache
+    mode: 0640
+  tags: ['authmaster']
+
+- name: create auth_master files directory
+  file: path=/opt/auth_master owner=root group=root mode=0700 state=directory
+  when: auth_master_password_expiration_emails|default(false) == true
+  tags: ['authmaster']
+
+- name: place auth_master scripts
+  template:
+    src: "opt.auth_master.sendPasswordExpirationEmails.sh.j2"
+    dest: /opt/auth_master/sendPasswordExpirationEmails.sh
+    owner: root
+    group: root
+    mode: 0700
+  when: auth_master_password_expiration_emails|default(False)
+  tags: ['authmaster']
+
+- name: enable password expiration email cron
+  cron:
+    name: "auth_master-sendPasswordExpirationEmails"
+    minute: 0
+    hour: 0
+    user: "root"
+    job: "/opt/auth_master/sendPasswordExpirationEmails.sh"
+    cron_file: "auth_master-sendPasswordExpirationEmails"
+  when: auth_master_password_expiration_emails|default(False)
+  tags: ['authmaster']
+
+- name: generate seed ldif file (if enabled)
+  template:
+    src: seed_directory.ldif.j2
+    dest: /root/seed.ldif
+    mode: 0600
+  when: auth_master_generate_seed|default(False)
+  tags: ['authmaster']
