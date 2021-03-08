@@ -1,0 +1,55 @@
+---
+openldap_master_install_php: true
+openldap_master_pla_version: '1.2.6.2'
+openldap_master_webserver_root: /var/www
+openldap_master_webserver_group: apache
+openldap_master_configure_webserver: true
+# You should change this to something secure
+openldap_master_pla_session_key: 'asdfQWER123*()_'
+openldap_master_pla_templates:
+  - noPrivUser.xml
+  - privUserWithKey.xml
+
+auth_master_pla_remove_templates:
+  - alias.xml
+  - courierMailAccount.xml
+  - courierMailAlias.xml
+  - dNSDomain.xml
+  - example.xml
+  - kolabPerson.xml
+  - mozillaOrgPerson.xml
+  - sambaDomain.xml
+  - sambaGroupMapping.xml
+  - sambaMachine.xml
+  - sambaSamAccount.xml
+  - sendmailMTAAliasObject.xml
+  - sendmailMTAClass.xml
+  - sendmailMTACluster.xml
+  - sendmailMTAMapObject.xml
+  - sendmailVirtualDomain.xml
+  - sendmailVirtualUser.xml
+  - simpleSecurityObject.xml
+
+openldap_master_timezone: 'America/New_York'
+
+openldap_master_company: "Example.com"
+openldap_master_sysadmin: "Operations Team"
+openldap_master_sysadmin_email: "opsteam@example.com"
+openldap_master_ldap_host: "localhost"
+openldap_master_ldap_url: "ldap://{{ openldap_master_ldap_host }}"
+openldap_master_ldap_port: '389'
+openldap_master_ldap_basedn: "dc=example,dc=com"
+openldap_master_ldap_tls: 'true'
+openldap_master_admin_bind_user: "cn=appbind,ou=SpecialUsers,{{ openldap_master_ldap_basedn }}"
+openldap_master_admin_bind_pass: "secret"
+openldap_master_reset_bind_user: "uid=passwordreset,ou=SpecialUsers,{{ openldap_master_ldap_basedn }}"
+openldap_master_reset_bind_pass: "secret"
+
+openldap_master_mail_from: "noreply@example.com"
+openldap_master_reset_mail_from_name: "Example.com Self Service Password"
+# You should change this to something secure
+openldap_master_reset_token_key: 'secret'
+openldap_master_reset_url: https://reset.example.com
+
+# Uncomment this and set it to a location to download a custom logo if you want to use it
+#openldap_master_reset_logo_url: http://example.com/logo.png

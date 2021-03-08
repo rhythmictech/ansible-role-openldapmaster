@@ -1,17 +1,17 @@
 <?php
 
-$config->custom->session['blowfish'] = 'RXuPWk#hiwEqi#tjdc&jehobbqDY86ko';
+$config->custom->session['blowfish'] = '{{ openldap_master_pla_session_key }}';
 
 /* If your auth_type is http, you can override your HTTP Authentication Realm. */
 // $config->custom->session['http_realm'] = sprintf('%s %s',app_name(),'login');
 
 $config->custom->appearance['language'] = 'auto';
 
-$config->custom->jpeg['tmpdir'] = '/var/www/tmp';
+$config->custom->jpeg['tmpdir'] = '{{ openldap_master_webserver_root }}/tmp';
 
 $config->custom->password['no_random_crypt_salt'] = false;
 
-$config->custom->appearance['timezone'] = 'America/New_York';
+$config->custom->appearance['timezone'] = '{{ openldap_master_timezone }}';
 
 $config->custom->commands['cmd'] = array(
 	'entry_internal_attributes_show' => true,
@@ -89,22 +89,22 @@ $servers = new Datastore();
    declaration. */
 $servers->newServer('ldap_pla');
 
-$servers->setValue('server','name','{{ company }} LDAP Server');
-$servers->setValue('server','host','{{ auth_ldap_repl_url }}');
-$servers->setValue('server','port',389);
-$servers->setValue('server','base',array('{{ auth_ldap_basedn }}'));
+$servers->setValue('server','name','{{ openldap_master_company }} LDAP Server');
+$servers->setValue('server','host','{{ openldap_master_ldap_url }}');
+$servers->setValue('server','port', {{ openldap_master_ldap_port }});
+$servers->setValue('server','base',array('{{ openldap_master_ldap_basedn }}'));
 
 $servers->setValue('login','auth_type','session');
-$servers->setValue('server','tls',true);
+$servers->setValue('server','tls',{{ openldap_master_ldap_tls }});
 $servers->setValue('appearance','password_hash','clear');
 $servers->setValue('login','attr','uid');
 
-$servers->setValue('login','bind_id','uid=appbind,ou=SpecialUsers,{{ auth_ldap_basedn }}');
-$servers->setValue('login','bind_pass','{{ auth_ldap_binduser_pw }}');
+$servers->setValue('login','bind_id','{{ openldap_master_admin_bind_user }}');
+$servers->setValue('login','bind_pass','{{ openldap_master_admin_bind_pass }}');
 
 $servers->setValue('auto_number','enable',true);
 $servers->setValue('auto_number','mechanism','search');
-$servers->setValue('auto_number','search_base','{{ auth_ldap_basedn }}');
+$servers->setValue('auto_number','search_base','{{ openldap_master_ldap_basedn }}');
 $servers->setValue('auto_number','min',array('uidNumber'=>8000,'gidNumber'=>7000));
 
 $servers->setValue('login','anon_bind',false);
